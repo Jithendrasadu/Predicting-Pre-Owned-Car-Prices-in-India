@@ -1,0 +1,501 @@
+---
+title: "ITEC 621 Project"
+author: "Harinder, Pramod, Wright, Jithendra"
+date: "`r Sys.Date()`"
+output:
+  word_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    toc: yes
+    toc_depth: '2'
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# 1. Reading the data
+
+```{r}
+
+cars.data <- read.table("Indian Cars data.csv", sep = ",", header = T, row.names = 1)
+
+cars.data[1:14,1:10]
+
+summary(cars.data)
+
+```
+
+# 2. Getting the class of various predictor variables
+
+```{r}
+
+class(cars.data)
+class(cars.data$Selling.Price)
+class(cars.data$Kilometers.Driven)
+class(cars.data$Age.of.Vehicle)
+class(cars.data$Owner)
+class(cars.data$Current.Price)
+
+```
+
+
+# 3. Correlation of different continuous variables
+
+```{r}
+
+Cars.mat <- as.matrix(cars.data[,4:8])
+class(Cars.mat)
+
+Cars.cor <- cor(Cars.mat)
+library(corrplot)
+
+corrplot(Cars.cor, order = "hclust", method = "number")
+
+corrplot(Cars.cor, order = "hclust", method = "ellipse")
+
+```
+
+
+# 4. Histogram & qqplots 
+
+**4.1 For Selling Price (Y variable), New Price and Kilometers driven**
+
+```{r}
+
+#par(mfrow = c(1, 3))
+hist(cars.data$Selling.Price, main = "Selling Price Histogram", xlab = " Selling Price Histogram")
+hist(cars.data$Current.Price, main = "Current Price Histogram", xlab = " Current Price Histogram")
+hist(cars.data$Kilometers.Driven, main = "Kilometers Histogram", xlab = " Kilometers Histogram")
+
+qqnorm(cars.data$Selling.Price, main = "Selling Price QQ Plot")
+qqline(cars.data$Selling.Price)
+
+qqnorm(cars.data$Current.Price, main = "Current Price QQ Plot")
+qqline(cars.data$Current.Price)
+
+qqnorm(cars.data$Kilometers.Driven, main = "Kilometers driven QQ Plot")
+qqline(cars.data$Kilometers.Driven)
+
+```
+
+**QQ plot for log of Selling Price (Y variable), New Price and Kilometers driven**
+
+```{r}
+
+#par(mfrow = c(1, 3))
+hist(log(cars.data$Selling.Price), main = "Histogram of Log(Selling Price) ", xlab = " Log of Selling Price")
+hist(log(cars.data$Current.Price), main = "Histogram of Log(Current Price)", xlab = " Log of Current Price ")
+hist(log(cars.data$Kilometers.Driven), main = "Histogram of Log (Kilometers)", xlab = " Log of Kilometers")
+
+
+qqnorm(log(cars.data$Selling.Price), main = "Selling Price QQ Plot")
+qqline(log(cars.data$Selling.Price))
+
+qqnorm(log(cars.data$Current.Price), main = "Current Price QQ Plot")
+qqline(log(cars.data$Current.Price))
+
+qqnorm(log(cars.data$Kilometers.Driven), main = "Kilometers driven QQ Plot")
+qqline(log(cars.data$Kilometers.Driven))
+
+```
+
+
+# 5. Commentory of the results from basic desciptive statistics
+
+```{r}
+
+# The data looks to be normal in the middle, the data points are close to the qqline (indicating normality), but on the 2 extreme ends the points deviates from the lines indicating non-normality at the tail ends. The histogram is not a 100% mound shape or symmetrical. It has skewness to the right, but in the middle it looks somewhat normal in line with the qqplots.
+
+```
+
+
+# 6. Boxplots
+
+
+**Boxplot for Selling Price**
+
+```{r}
+
+boxplot(cars.data$Selling.Price, xlab = "Selling Price")
+
+```
+
+
+**Boxplot for Current Price (New price) of the vehicle**
+
+```{r}
+
+boxplot(cars.data$Current.Price, xlab = "New Price of the Vehicle")
+
+```
+
+
+**Boxplot for Kilometers driven by the vehicle**
+
+```{r}
+
+boxplot(cars.data$Kilometers.Driven, xlab = "Kilometers Driven")
+
+```
+
+
+**Boxplot for Age of the vehicle**
+
+```{r}
+
+boxplot(cars.data$Age.of.Vehicle, xlab = "Age of the Vehicle")
+
+```
+
+
+**Boxplot for Car Condition of the vehicle**
+
+```{r}
+
+boxplot(cars.data$Car.Condition, xlab = "Car Condition of the Vehicle")
+
+```
+
+
+**Boxplot for Selling Price by Owner**
+
+```{r}
+
+boxplot(cars.data$Selling.Price ~ cars.data$Owner , xlab = "Box plot of Owner by Selling Price")
+
+```
+
+**Boxplot for Selling Price by Fuel Type**
+
+```{r}
+
+boxplot(cars.data$Selling.Price ~ cars.data$Fuel.Type , xlab = "Box plot of Owner by Selling Price")
+
+```
+
+
+**Boxplot for Selling Price by Transmission Type**
+
+```{r}
+
+boxplot(cars.data$Selling.Price ~ cars.data$Transmission , xlab = "Box plot of Owner by Selling Price")
+
+```
+
+
+# 7. Regression Models - OLS 
+
+**7.1 Fit Model 1 (Continuous variables only)**
+
+
+```{r}
+
+library(boot)
+
+Cars.fit <- lm(Selling.Price ~ Age.of.Vehicle + Car.Condition + Kilometers.Driven + Current.Price, data = cars.data)
+summary(Cars.fit)
+
+plot(Cars.fit, which = 2)
+
+# Test RMSE using 10FCV
+glm.fit <- glm(Selling.Price ~ Age.of.Vehicle + Car.Condition + Kilometers.Driven + Current.Price, data = cars.data)
+
+OLS.fit.test.mse <- cv.glm(cars.data, glm.fit, K = 10)$delta[1]
+OLS.fit.test.rmse <- sqrt(OLS.fit.test.mse)
+
+OLS.fit.test.error <- cbind("OLS Fit - Test RMSE" = OLS.fit.test.rmse)
+OLS.fit.test.error
+
+
+```
+
+
+**7.2 Full model 2 (All variables)**
+
+```{r}
+
+Cars.full <- lm(Selling.Price ~ Age.of.Vehicle + Car.Condition + Kilometers.Driven + Current.Price + Owner + Fuel.Type + Transmission, data = cars.data)
+
+summary(Cars.full)
+
+plot(Cars.full, which = 2)
+
+# Test RMSE using 10FCV
+
+glm.full <- glm(Selling.Price ~ Age.of.Vehicle + Car.Condition + Kilometers.Driven + Current.Price + Owner +
+                  Fuel.Type + Transmission, data = cars.data)
+
+OLS.full.test.mse <- cv.glm(cars.data, glm.full, K = 10)$delta[1]
+OLS.full.test.rmse <- sqrt(OLS.full.test.mse)
+
+OLS.full.test.error <- cbind("OLS Full - Test RMSE" = OLS.full.test.rmse)
+OLS.full.test.error
+
+
+```
+
+
+# 8. Testing for Multicollinearity and Stepwise regression for variable selection
+
+**8.1 Conditional Index (CI)**
+
+```{r}
+library("klaR")
+
+cond.index(Cars.fit, data = cars.data)
+cond.index(Cars.full, data = cars.data)
+
+```
+
+**8.2 VIF SCORES**
+
+```{r}
+
+library(car)
+
+vif(Cars.fit)
+vif(Cars.full)
+
+```
+
+**8.3 Stepwise Regression (Variables selection)**
+
+```{r}
+
+library(ISLR)
+
+Cars.Null <- lm(Selling.Price ~ 1, data = cars.data)
+
+Cars.step <- step(Cars.full,
+                  scope = list(lower = Cars.Null, upper = Cars.full), direction = "both", test = "F")
+summary(Cars.step)
+
+```
+
+
+# 9. Standardizing the model
+
+**9.1 Standardization of Fit model**
+
+```{r}
+
+Cars.standardized <- data.frame(scale(cars.data[,4:8], center = F, scale = T))
+
+standarization.fit <- lm(Selling.Price ~ Age.of.Vehicle + Car.Condition + Kilometers.Driven + 
+                           Current.Price-1, data = Cars.standardized ) 
+summary(standarization.fit)
+
+# Test RMSE using 10FCV
+
+std.fit <- glm(Selling.Price ~ Age.of.Vehicle + Car.Condition + Kilometers.Driven + Current.Price, data = cars.data)
+
+std.fit.test.mse <- cv.glm(cars.data, std.fit, K = 10)$delta[1]
+std.fit.test.rmse <- sqrt(std.fit.test.mse)
+
+std.fit.test.error <- cbind("Standadized Fit - Test RMSE" = std.fit.test.rmse)
+std.fit.test.error
+
+
+```
+
+**9.2 Standardization of Full model**
+
+```{r}
+
+# Select only the numeric columns of the cars.data data.frame
+numeric.cars <- cars.data[, sapply(cars.data, is.numeric)]
+
+# Standardize the numeric data
+scaled.numeric.cars <- scale(numeric.cars, center = TRUE, scale = TRUE)
+
+# Combine the standardized numeric data with the non-numeric columns of the original data.frame
+Cars.standardized <- cbind(cars.data[, !sapply(cars.data, is.numeric)], scaled.numeric.cars)
+
+
+standarization.full <- lm(Selling.Price ~ Age.of.Vehicle + Car.Condition + Kilometers.Driven + Current.Price + Owner
+                          + Fuel.Type + Transmission -1, data = Cars.standardized )
+
+summary(standarization.full)
+
+# Test RMSE using 10FCV
+
+std.full <- glm(Selling.Price ~ Age.of.Vehicle + Car.Condition + Kilometers.Driven + Current.Price + Owner + 
+                 Fuel.Type + Transmission, data = cars.data)
+
+std.full.test.mse <- cv.glm(cars.data, std.full, K = 10)$delta[1]
+std.full.test.rmse <- sqrt(std.full.test.mse)
+
+std.full.test.error <- cbind("Standadized Full - Test RMSE" = std.full.test.rmse)
+std.full.test.error
+
+
+```
+
+# 10. PCR Model
+
+**10.1 PCR Fit model**
+```{r}
+# PCR FULL
+library(pls)
+
+pcr.fit <- pcr(Selling.Price~Age.of.Vehicle + Car.Condition +
+                        Kilometers.Driven + Current.Price,
+                         data = cars.data , scale = TRUE, validation = "CV")
+summary(pcr.fit)
+
+validationplot(pcr.fit, val.type = "RMSEP", legendpos = "bottomright")
+
+
+```
+
+
+**10.2 PCR Full model**
+```{r}
+# PCR FULL
+library(pls)
+
+pcr.full <- pcr(Selling.Price~Age.of.Vehicle + Car.Condition +
+                        Kilometers.Driven + Current.Price + Owner + Fuel.Type + Transmission,
+                         data = cars.data , scale = TRUE, validation = "CV")
+summary(pcr.full)
+
+validationplot(pcr.full, val.type = "RMSEP", legendpos = "bottomright")
+
+```
+
+
+# 11.Non parametric model - Random Forest
+
+**11.1 Random Forest Fit Model(Continuous variables only)**
+
+```{r}
+  
+  library(randomForest)
+  set.seed(1)
+  
+  rf.fit <- randomForest(Selling.Price ~ Age.of.Vehicle + Car.Condition +
+                          Kilometers.Driven + Current.Price,
+                           data = cars.data, mtry = 4, importance = T)
+  
+  rf.fit
+  plot(rf.fit)
+  
+  
+m1 <- rf.fit$mtry # Number of predictors in mtry
+varImpPlot(rf.fit, type = 1, main = paste("Random Forest Tree with mtry =", m1))
+importance(rf.fit) # To view the importance of each variable
+
+
+importance(rf.fit, type = 1)
+
+mse.rfit <- mean(rf.fit$mse)
+rmse.rfit <- sqrt(mse.rfit)
+cbind( "RF FIT RMSE" = rmse.rfit)
+
+```
+
+**11.2 Random Forest Full model(All variables)**
+
+```{r}
+
+set.seed(1)
+rf.full <- randomForest(Selling.Price ~ Age.of.Vehicle + Car.Condition +
+                        Kilometers.Driven + Current.Price + Owner + Fuel.Type + Transmission,
+                         data = cars.data, mtry = 4, importance = T)
+
+rf.full
+plot(rf.full)
+
+m2 <- rf.full$mtry # Number of predictors in mtry
+varImpPlot(rf.full, type = 1, main = paste("Random Forest Tree with mtry =", m2))
+importance(rf.full) # To view the importance of each variable
+
+
+importance(rf.full, type = 1)
+
+mse.rfull <- mean(rf.full$mse)
+rmse.rfull <- sqrt(mse.rfull)
+cbind( "RF FULL RMSE" = rmse.rfull)
+```
+
+
+# 12. Combining all the results
+
+```{r}
+
+final.rmse <- cbind("OLS Fit - Test RMSE" = OLS.fit.test.rmse, 
+      "OLS Full - Test RMSE" = OLS.full.test.rmse,
+      "Standadized Fit - Test RMSE" = std.fit.test.rmse,
+      "Standadized Full - Test RMSE" = std.full.test.rmse,
+      "RF FIT RMSE" = rmse.rfit,
+      "RF FULL RMSE" = rmse.rfull,
+      "PCR Fit (4 comps)" = 139794,
+      "PCR Full (7 comps)" = 141245 )
+
+final.rmse
+
+```
+
+# 13. RMSE Result Summary
+
+```{r}
+# create the RMSE.Values matrix
+RMSE.Values <- rbind(OLS.fit.test.rmse, OLS.full.test.rmse, std.fit.test.rmse, std.full.test.rmse, rmse.rfit, rmse.rfull, 139794, 141245)
+rownames(RMSE.Values) <- c("OLS Fit", "OLS Full", "Std Fit", "Std Full", "RF Fit", "RF Full", "PCR Fit (4 comps)", "PCR Full (7 comps)")
+
+# arrange the rows in descending order based on the first column
+RMSE.Values <- RMSE.Values[order(-RMSE.Values[,1]), ]
+
+# print the sorted matrix
+knitr::kable(RMSE.Values, format = "simple", digits = 2, caption = "RMSE Result Summary")
+
+```
+
+# 14. Histogram for RMSE summary
+
+```{r}
+# load the ggplot2 library
+library(ggplot2)
+
+library(tidyr)
+library(dplyr)
+library(scales)
+
+# create the RMSE.Values matrix
+RMSE.Values <- rbind(OLS.fit.test.rmse, OLS.full.test.rmse, std.fit.test.rmse, std.full.test.rmse, rmse.rfit, rmse.rfull, 139794, 141245)
+rownames(RMSE.Values) <- c("OLS Fit", "OLS Full", "Std Fit", "Std Full", "RF Fit", "RF Full", "PCR Fit (4 comps)", "PCR Full (7 comps)")
+
+# convert the matrix to a data frame and divide by 1000
+RMSE_df <- as.data.frame(RMSE.Values/1000)
+RMSE_df$Methods <- rownames(RMSE_df)
+
+# convert the data frame to long format
+RMSE_long <- RMSE_df %>% pivot_longer(cols = -Methods, names_to = "RMSE_Type", values_to = "RMSE_Value")
+
+# arrange the data frame by RMSE_Value in descending order
+RMSE_long <- RMSE_long %>% arrange(desc(RMSE_Value))
+
+# create the plot using ggplot2
+ggplot(RMSE_long, aes(x = Methods, y = RMSE_Value, fill = ifelse(RMSE_Value == min(RMSE_Value), "smallest", "others"))) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(round(RMSE_Value, 2), "K")), 
+            position = position_stack(vjust = 0.5), size = 3) +
+  labs(title = "Barplot of RMSE Values", x = "", y = "RMSE (in thousands)") +
+  scale_fill_manual(values = c("smallest" = "steelblue", "others" = "grey80")) +
+  scale_y_continuous(labels = comma_format(scale = 0.001)) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.line = element_line(color = "black", size = 0.5),
+        axis.text.x = element_text(size = 12, angle = 45, hjust = 1, vjust = 1),
+        axis.text.y = element_text(size = 12),
+        panel.grid.major.y = element_line(color = "grey90"),
+        panel.grid.minor.y = element_blank(),
+        legend.position = "none")
+
+
+```
+
